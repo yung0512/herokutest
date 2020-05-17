@@ -9,5 +9,5 @@ def home():
 def test():
     return "This is Test"
 
-if _name_ =="__main__":
+if __sname__ =="__main__":
     app.run()
