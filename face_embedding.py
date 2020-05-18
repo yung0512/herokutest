@@ -1,7 +1,8 @@
 import face_recognition
 import cv2
 import numpy as np
-
+import os
+import base64
 # This is a super simple (but slow) example of running face recognition on live video from your webcam.
 # There's a second example that's a little more complicated but runs faster.
 
@@ -13,8 +14,9 @@ import numpy as np
 video_capture = cv2.VideoCapture(0)
 
 # Load a sample picture and learn how to recognize it.
-obama_image = face_recognition.load_image_file("obama.jpg")
-obama_face_encoding = face_recognition.face_encodings(obama_image)[0]
+"""
+Amy_image = face_recognition.load_image_file("database/Amy.jpg")
+Amy_face_encoding = face_recognition.face_encodings(Amy_image)[0]
 
 # Load a second sample picture and learn how to recognize it.
 biden_image = face_recognition.load_image_file("biden.jpg")
@@ -29,13 +31,37 @@ known_face_names = [
     "Barack Obama",
     "Joe Biden"
 ]
+"""
+"""
+def function image_reco(image)
+1.將已經確認的人臉放入資料庫
+2.讀入從htttp傳來的照片
+3.傳回辨識結果
+"""
+known_face_encodings = []
+known_face_names = []
+people = os.listdir("database/")
+people.sort()
+for person in people:
+    face_image = face_recognition.load_image_file(person)
+    face_image_encoding = face_recognition.face_encodings(face_image)[0]
+    known_face_encodings.append(face_image)
+    known_face_names.append(face_image_encoding)
 
-while True:
-    # Grab a single frame of video
-    ret, frame = video_capture.read()
 
+def face_reco(http_image):#接收app.py已經轉好的RGB numpy array
+    #將database的照片label並放入資料庫裡面
+    known_face_encodings = []
+    known_face_names = []
+    people = os.listdir("database/")
+    people.sort()
+    for person in people:
+        face_image = face_recognition.load_image_file(person)
+        face_image_encoding = face_recognition.face_encodings(face_image)[0]
+        known_face_encodings.append(face_image)
+        known_face_names.append(face_image_encoding)
     # Convert the image from BGR color (which OpenCV uses) to RGB color (which face_recognition uses)
-    rgb_frame = frame[:, :, ::-1]
+    rgb_frame = http_image[:, :, ::-1]
 
     # Find all the faces and face enqcodings in the frame of video
     face_locations = face_recognition.face_locations(rgb_frame)
@@ -60,20 +86,11 @@ while True:
             name = known_face_names[best_match_index]
 
         # Draw a box around the face
-        cv2.rectangle(frame, (left, top), (right, bottom), (0, 0, 255), 2)
+        cv2.rectangle(http_image, (left, top), (right, bottom), (0, 0, 255), 2)
 
         # Draw a label with a name below the face
-        cv2.rectangle(frame, (left, bottom - 35), (right, bottom), (0, 0, 255), cv2.FILLED)
+        cv2.rectangle(http_image, (left, bottom - 35), (right, bottom), (0, 0, 255), cv2.FILLED)
         font = cv2.FONT_HERSHEY_DUPLEX
-        cv2.putText(frame, name, (left + 6, bottom - 6), font, 1.0, (255, 255, 255), 1)
-
-    # Display the resulting image
-    cv2.imshow('Video', frame)
-
-    # Hit 'q' on the keyboard to quit!
-    if cv2.waitKey(1) & 0xFF == ord('q'):
-        break
-
-# Release handle to the webcam
-video_capture.release()
-cv2.destroyAllWindows()
+        cv2.putText(http_image, name, (left + 6, bottom - 6), font, 1.0, (255, 255, 255), 1)
+    
+    return name
