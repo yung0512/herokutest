@@ -38,16 +38,7 @@ def function image_reco(image)
 2.讀入從htttp傳來的照片
 3.傳回辨識結果
 """
-known_face_encodings = []
-known_face_names = []
-people = os.listdir("database/")
-people.sort()
-for person in people:
-    face_image = face_recognition.load_image_file(person)
-    face_image_encoding = face_recognition.face_encodings(face_image)[0]
-    known_face_encodings.append(face_image)
-    known_face_names.append(face_image_encoding)
-
+def coculate_database():
 
 def face_reco(http_image):#接收app.py已經轉好的RGB numpy array
     #將database的照片label並放入資料庫裡面
@@ -56,16 +47,17 @@ def face_reco(http_image):#接收app.py已經轉好的RGB numpy array
     people = os.listdir("database/")
     people.sort()
     for person in people:
-        face_image = face_recognition.load_image_file(person)
+        face_image = face_recognition.load_image_file("database/"+person)
         face_image_encoding = face_recognition.face_encodings(face_image)[0]
-        known_face_encodings.append(face_image)
-        known_face_names.append(face_image_encoding)
+        known_face_encodings.append(face_image_encoding)
+        known_face_names.append(person[0:len(person)-4])
     # Convert the image from BGR color (which OpenCV uses) to RGB color (which face_recognition uses)
-    rgb_frame = http_image[:, :, ::-1]
+    rgb_frame = cv2.cvtColor(http_image,cv2.COLOR_BGR2RGB)
 
     # Find all the faces and face enqcodings in the frame of video
     face_locations = face_recognition.face_locations(rgb_frame)
     face_encodings = face_recognition.face_encodings(rgb_frame, face_locations)
+ 
 
     # Loop through each face in this frame of video
     for (top, right, bottom, left), face_encoding in zip(face_locations, face_encodings):
@@ -94,3 +86,7 @@ def face_reco(http_image):#接收app.py已經轉好的RGB numpy array
         cv2.putText(http_image, name, (left + 6, bottom - 6), font, 1.0, (255, 255, 255), 1)
     
     return name
+if __name__ == "__main__":
+    test = cv2.imread('database/f4007_1.jpg')
+    answer = face_reco(test)
+    print(answer)
