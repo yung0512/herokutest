@@ -1,47 +1,69 @@
-import face_recognition
 import cv2
 import numpy as np
+import dlib
+import csv
+from skimage import io
+import pandas as pd
 import os
 import base64
-# This is a super simple (but slow) example of running face recognition on live video from your webcam.
-# There's a second example that's a little more complicated but runs faster.
 
-# PLEASE NOTE: This example requires OpenCV (the `cv2` library) to be installed only to read from your webcam.
-# OpenCV is *not* required to use the face_recognition library. It's only required if you want to run this
-# specific demo. If you have trouble installing it, try any of the other demos that don't require it instead.
 
-# Get a reference to webcam #0 (the default one)
-video_capture = cv2.VideoCapture(0)
+#the detector of the human frontal face
+detector = dlib.get_frontal_face_detector()
+#dlib face predictor
+predictor = dlib.shape_predictor("shape_predictor_68_face_landmarks.dat")
+#dlib face recogniation model
+face_rec = dlib.face_recognition_model_v1("dlib_face_recognition_resnet_model_v1.dat")
 
-# Load a sample picture and learn how to recognize it.
-"""
-Amy_image = face_recognition.load_image_file("database/Amy.jpg")
-Amy_face_encoding = face_recognition.face_encodings(Amy_image)[0]
-
-# Load a second sample picture and learn how to recognize it.
-biden_image = face_recognition.load_image_file("biden.jpg")
-biden_face_encoding = face_recognition.face_encodings(biden_image)[0]
-
-# Create arrays of known face encodings and their names
-known_face_encodings = [
-    obama_face_encoding,
-    biden_face_encoding
-]
-known_face_names = [
-    "Barack Obama",
-    "Joe Biden"
-]
-"""
 """
 def function image_reco(image)
 1.將已經確認的人臉放入資料庫
 2.讀入從htttp傳來的照片
 3.傳回辨識結果
 """
-def coculate_database():
+
+#return the face 128D_feature
+def coculate_128D_features():
+    people = os.listdir("database/")
+    people.sort()
+    name_list = []
+    person_num = len(people)
+    with open("features_of_database.csv","w",newline="") as csvfile:
+        writer = csv.writer(csvfile)
+        for person in people:
+            face_descriptor = 0
+            img_rd = io.imread("database/"+person)
+            faces = detector(img_rd)
+            print("image with faces detected")
+
+            #to make sure that at least one face in the image
+            if len(faces) != 0 :
+                shape = predictor(img_rd,faces[0])
+                face_descriptor = face_rec.compute_face_descriptor(img_rd,shape)
+                writer.writerow(face_descriptor)
+                name_list.append(person[0:len(person)-4])
+            else:
+                face_descriptor = 0
+                print("no face")
+
+    return name_list #return the name list in the database
+def euclidean_distance(feature_1,feature_2):
+    feature_1 = np.array(feature_1)
+    feature_2 = np.array(feature_2)
+    dist = np.sqrt(np.sum(np.square(feature_1-feature_2)))
+    return dist
+def get_namelist():
+    people = os.listdir("database/")
+    people.sort()
+    name_list = []
+    person_num = len(people)
+    for person in people:
+        name_list.append(person[0:len(person)-4])
+    return name_list
 
 def face_reco(http_image):#接收app.py已經轉好的RGB numpy array
     #將database的照片label並放入資料庫裡面
+    """
     known_face_encodings = []
     known_face_names = []
     people = os.listdir("database/")
@@ -84,9 +106,45 @@ def face_reco(http_image):#接收app.py已經轉好的RGB numpy array
         cv2.rectangle(http_image, (left, bottom - 35), (right, bottom), (0, 0, 255), cv2.FILLED)
         font = cv2.FONT_HERSHEY_DUPLEX
         cv2.putText(http_image, name, (left + 6, bottom - 6), font, 1.0, (255, 255, 255), 1)
+    """
+   
+    if os.path.exists("features_of_database.csv"):
+        #read csv file
+        path_features_known_csv = "features_of_database.csv"
+        csv_rd  = pd.read_csv(path_features_known_csv,header = None)
+        faces = detector(http_image,0)
+        #to store the known faces 128d_fetures from csv to array
+        features_known_arr = []
+        for i in range(csv_rd.shape[0]):
+            features_someone_arr = []
+            for j in range(0,len(csv_rd.iloc[i])):
+                features_someone_arr.append(csv_rd.iloc[i][j])
+            features_known_arr.append(features_someone_arr)                    
+        
+        
+        if len(faces)!=0:
+            shape = predictor(http_image,faces[0])
+            features_image = face_rec.compute_face_descriptor(http_image,shape)
+            distance_list = []
+            for i in range(len(features_known_arr)):
+                distance_tmp = euclidean_distance(features_image,features_known_arr[i])
+                #coculate the image euclidean distance with images in database
+                distance_list.append(distance_tmp)
+            ans_index = distance_list.index(min(distance_list))
+            namelist = get_namelist()
+            if min(distance_list) < 0.4:
+                print("may be "+ namelist[ans_index])
+                return namelist[ans_index]
+            else:
+                print("unknown person")
+                return "unkown person"
+        else:
+            return "no face in image!"        
+    else:
+        return "file not exist!"       
     
-    return name
 if __name__ == "__main__":
-    test = cv2.imread('database/f4007_1.jpg')
+    test = cv2.imread('../FISHEYE/FisheyeCalibration_Src/FisheyeCorrection2/face_reco.jpg')
+    #coculate_128D_features()
     answer = face_reco(test)
     print(answer)
